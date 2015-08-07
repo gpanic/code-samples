@@ -7,6 +7,9 @@
 class AStar
 {
 public:
+	AStar() = default;
+	virtual ~AStar() = default;
+
 	class Node
 	{
 	public:
