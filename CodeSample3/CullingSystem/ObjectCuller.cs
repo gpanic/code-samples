@@ -9,13 +9,18 @@ public abstract class ObjectCuller : MonoBehaviour
     {
         public string groupName;
         public GameObject[] objectGroups;
-        public float cullDistance = 350.0f;
+        public float horizontalCullDistance = 350.0f;
+        public float verticalUpwardsCullDistance = 25.0f;
+        public float verticalDownwardsCullDistance = 25.0f;
+        public bool verticalUpwardsCulling = true;
+        public bool verticalDownwardsCulling = true;
+        public bool horizontalCulling = true;
     }
 
     public float updateObjectsPerFrame = 1;
     public CullingGroup[] cullingGroups;
 
-    private Transform player;
+    private GameObject player;
     private int cullingGroupIndex = 0;
     private int objectGroupIndex = 0;
     private int objectIndex = 0;
@@ -25,12 +30,15 @@ public abstract class ObjectCuller : MonoBehaviour
 
     private void Start()
     {
-        if ((player = GameObject.FindGameObjectWithTag(Tags.player).transform) == null)
+        if ((player = GameObject.FindGameObjectWithTag(Tags.player)) == null)
         {
             Debug.LogError("Missing a player object.");
             enabled = false;
         }
-        enabled = ValidateCullingGroups();
+        else
+        {
+            enabled = ValidateCullingGroups();
+        }
     }
 
     private void Update()
@@ -43,7 +51,7 @@ public abstract class ObjectCuller : MonoBehaviour
             GameObject objectGroup = cullingGroup.objectGroups[objectGroupIndex];
             Transform obj = objectGroup.transform.GetChild(objectIndex);
 
-            if (IsBeyondDrawDistance(player.position, obj.position, cullingGroup))
+            if (IsBeyondDrawDistance(player.transform.position, obj.position, cullingGroup))
             {
                 Deactivate(obj.gameObject);
             }
@@ -70,13 +78,20 @@ public abstract class ObjectCuller : MonoBehaviour
         }
     }
 
+    // we use the horizontal distance and the vertical difference between the y components to determine when to draw an object
     private bool IsBeyondDrawDistance(Vector3 playerPosition, Vector3 objectPosition, CullingGroup cullingGroup)
     {
-        return Vector3.Distance(playerPosition, objectPosition) > cullingGroup.cullDistance;
+        Vector3 playerHorizontalPosition = playerPosition;
+        playerHorizontalPosition.y = 0;
+        Vector3 objectHorizontalPosition = objectPosition;
+        objectHorizontalPosition.y = 0;
 
+        return cullingGroup.horizontalCulling && (Vector3.Distance(playerHorizontalPosition, objectHorizontalPosition) > cullingGroup.horizontalCullDistance)
+            || cullingGroup.verticalUpwardsCulling && ((playerPosition.y - objectPosition.y) < -cullingGroup.verticalUpwardsCullDistance)
+            || cullingGroup.verticalDownwardsCulling && ((playerPosition.y - objectPosition.y) > cullingGroup.verticalDownwardsCullDistance);
     }
 
-    // doesn't allow empty culling groups or object groups to not waste time
+    // doesn't allow empty culling groups or object groups so as to not waste time
     private bool ValidateCullingGroups()
     {
         if (cullingGroups.Length == 0)
