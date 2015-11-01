@@ -89,9 +89,9 @@ public class StatisticsData
         {
             throw new System.IndexOutOfRangeException("No checkpoint data exists");
         }
-        if (currentLevel.CheckpointData.Length >= checkpoint)
+        if (currentLevel.CheckpointData.Length < checkpoint)
         {
-            throw new System.ArgumentException("Passed checkpoint does not exist");
+            throw new System.ArgumentException("Checkpoint does not exist");
         }
         return currentLevel.CheckpointData[checkpoint - 1];
     }
